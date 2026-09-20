@@ -36,7 +36,7 @@ if numeric_columns:
 
     fig1 = px.line(
         df,
-        x="End date",
+        x="EndDate",
         y="value",
         title="Exchange rate value over time",
         
