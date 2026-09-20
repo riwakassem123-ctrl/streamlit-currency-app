@@ -36,8 +36,10 @@ if numeric_columns:
 
     fig1 = px.line(
         df,
-        y=selected_column,
-        title=f"{selected_column} Over Time"
+        x="End date"
+        y="value",
+        title="Exchange rate value over time",
+        markers= True
     )
 
     st.plotly_chart(fig1, use_container_width=True)
