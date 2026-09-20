@@ -39,7 +39,7 @@ if numeric_columns:
         x="End date",
         y="value",
         title="Exchange rate value over time",
-        markers= True
+        
     )
 
     st.plotly_chart(fig1, use_container_width=True)
