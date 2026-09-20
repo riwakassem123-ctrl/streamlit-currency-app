@@ -10,7 +10,7 @@ st.write(
 )
 
 # Load the dataset
-df = pd.read_csv("dataset.csv")
+df = pd.read_csv("dataset.csv.xlsx")
 
 # Show the dataset
 st.subheader("Dataset")
@@ -50,7 +50,7 @@ if len(numeric_columns) >= 1:
 
 else:
     st.error("No numeric columns were found in the dataset.")
-
+    
 
 
 
