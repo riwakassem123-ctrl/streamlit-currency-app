@@ -10,7 +10,7 @@ st.write(
 )
 
 # Load the dataset
-df = pd.read_csv("dataset.csv.xlsx")
+df = pd.read_csv("dataset.xlsx")
 
 # Show the dataset
 st.subheader("Dataset")
