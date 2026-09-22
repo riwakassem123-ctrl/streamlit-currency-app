@@ -2,135 +2,128 @@ import streamlit as st
 import pandas as pd
 import plotly.express as px
 
-# Page title
-st.title("Lebanese Currency Exchange Rate Visualization")
+# -----------------------------
+# 1. LOAD DATA
+# -----------------------------
 
-st.write(
-    "This interactive dashboard explores changes in Lebanese currency "
-    "values over time and compares the distributions of LCU and SLC."
-)
-
-# Load the dataset
 df = pd.read_csv("dataset.csv")
 
-# Make sure Year is numeric
+st.title("Lebanese Currency Visualization")
+
+# -----------------------------
+# 2. CHECK DATA
+# -----------------------------
+
+st.write("Number of observations:", len(df))
+st.write("Columns:", df.columns.tolist())
+
+# -----------------------------
+# 3. PREPARE YEAR
+# -----------------------------
+
 df["Year"] = pd.to_numeric(df["Year"], errors="coerce")
-
-# Remove rows without a year
 df = df.dropna(subset=["Year"])
-
-# Convert Year to integer
 df["Year"] = df["Year"].astype(int)
 
 # -----------------------------
-# INTERACTION 1: YEAR RANGE
+# 4. YEAR FILTER
 # -----------------------------
 
-min_year = int(df["Year"].min())
-max_year = int(df["Year"].max())
+years = sorted(df["Year"].unique())
 
-year_range = st.slider(
+selected_years = st.select_slider(
     "Select year range",
-    min_value=min_year,
-    max_value=max_year,
-    value=(min_year, max_year)
+    options=years,
+    value=(years[0], years[-1])
 )
 
-# Filter the data
+start_year = selected_years[0]
+end_year = selected_years[1]
+
 filtered_df = df[
-    (df["Year"] >= year_range[0]) &
-    (df["Year"] <= year_range[1])
+    (df["Year"] >= start_year) &
+    (df["Year"] <= end_year)
 ]
 
 # -----------------------------
-# INTERACTION 2: CURRENCY
+# 5. CURRENCY SELECTION
 # -----------------------------
-
-currency_options = ["LCU", "SLC"]
 
 selected_currencies = st.multiselect(
     "Select currency",
-    currency_options,
-    default=currency_options
+    ["LCU", "SLC"],
+    default=["LCU", "SLC"]
 )
 
 # -----------------------------
-# VISUALIZATION 1
-# Currency trend over time
+# 6. LINE CHART
 # -----------------------------
 
-st.subheader("Currency Values Over Time")
+if selected_currencies:
 
-if len(selected_currencies) > 0:
+    st.subheader("Currency Values Over Time")
 
     fig1 = px.line(
         filtered_df,
         x="Year",
         y=selected_currencies,
-        markers=True,
-        title="Lebanese Currency Values Over Time"
+        markers=True
     )
 
     fig1.update_layout(
         xaxis_title="Year",
-        yaxis_title="Currency Value",
-        legend_title="Currency"
+        yaxis_title="Currency Value"
     )
 
     st.plotly_chart(fig1, use_container_width=True)
 
-else:
-    st.warning("Please select at least one currency.")
-
 # -----------------------------
-# INSIGHT 1
+# 7. FIRST INSIGHT
 # -----------------------------
 
-st.subheader("Insight 1")
+st.subheader("Insight")
 
 st.write(
-    "The line chart shows how Lebanese currency values changed over time. "
-    "The interactive year range allows the user to focus on a specific "
-    "period and observe changes more clearly."
+    "The line chart shows how the Lebanese currency values changed over "
+    "time. Users can select a specific period to examine changes more closely."
 )
 
 # -----------------------------
-# VISUALIZATION 2
-# Distribution / Box Plot
+# 8. BOX PLOT
 # -----------------------------
 
-st.subheader("Distribution of Currency Values")
+if selected_currencies:
 
-if len(selected_currencies) > 0:
+    st.subheader("Distribution of Currency Values")
 
-    melted_df = filtered_df[selected_currencies].melt(
+    box_data = filtered_df[selected_currencies].melt(
         var_name="Currency",
         value_name="Value"
     )
 
     fig2 = px.box(
-        melted_df,
+        box_data,
         x="Currency",
         y="Value",
-        points="outliers",
-        title="Distribution of Currency Values"
+        points="outliers"
     )
 
     fig2.update_layout(
         xaxis_title="Currency",
-        yaxis_title="Currency Value"
+        yaxis_title="Value"
     )
 
     st.plotly_chart(fig2, use_container_width=True)
 
 # -----------------------------
-# INSIGHT 2
+# 9. SECOND INSIGHT
 # -----------------------------
 
-st.subheader("Insight 2")
+st.subheader("Second Insight")
 
 st.write(
-    "The box plot highlights the distribution and spread of the currency "
-    "values. Extreme observations appear as outliers and reflect periods "
-    "of substantial changes in currency values."
+    "The box plot shows the distribution and spread of the currency values. "
+    "The outliers represent observations that are unusually high or low "
+    "relative to the rest of the data."
 )
+
