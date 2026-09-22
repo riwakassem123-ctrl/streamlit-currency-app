@@ -21,13 +21,13 @@ st.write(
 df = pd.read_csv("dataset.csv")
 
 # Prepare dates
-df["End date"] = pd.to_datetime(df["End date"], errors="coerce")
+df["Enddate"] = pd.to_datetime(df["Enddate"], errors="coerce")
 
 # Remove rows with missing information
-df = df.dropna(subset=["End date", "Value", "Currency"])
+df = df.dropna(subset=["Enddate", "Value", "Currency"])
 
 # Sort by date
-df = df.sort_values("End date")
+df = df.sort_values("Enddate")
 
 
 # -----------------------------
@@ -51,8 +51,8 @@ currency_df = df[df["Currency"] == selected_currency].copy()
 # INTERACTION 2: Date range
 # -----------------------------
 
-min_date = currency_df["End date"].min().date()
-max_date = currency_df["End date"].max().date()
+min_date = currency_df["Enddate"].min().date()
+max_date = currency_df["Enddate"].max().date()
 
 selected_dates = st.slider(
     "Choose a date range:",
@@ -63,8 +63,8 @@ selected_dates = st.slider(
 
 # Apply the selected date range
 filtered_df = currency_df[
-    (currency_df["End date"].dt.date >= selected_dates[0]) &
-    (currency_df["End date"].dt.date <= selected_dates[1])
+    (currency_df["Enddate"].dt.date >= selected_dates[0]) &
+    (currency_df["Enddate"].dt.date <= selected_dates[1])
 ]
 
 
@@ -76,7 +76,7 @@ st.subheader("Exchange Rate Value Over Time")
 
 fig1 = px.line(
     filtered_df,
-    x="End date",
+    x="Enddate",
     y="Value",
     title=f"{selected_currency} Exchange Rate Value Over Time",
     markers=True
