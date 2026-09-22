@@ -2,139 +2,135 @@ import streamlit as st
 import pandas as pd
 import plotly.express as px
 
-st.set_page_config(
-    page_title="Lebanon Exchange Rate Analysis",
-    layout="wide"
-)
-
-st.title("Lebanon Exchange Rate Analysis")
+# Page title
+st.title("Lebanese Currency Exchange Rate Visualization")
 
 st.write(
-    """
-    This interactive app examines changes in Lebanon's exchange-rate data
-    over time. The dataset contains exchange-rate observations identified
-    by currency, dates, and recorded values.
-    """
+    "This interactive dashboard explores changes in Lebanese currency "
+    "values over time and compares the distributions of LCU and SLC."
 )
 
-# Load dataset
-df = pd.read_csv("dataset.csv")
+# Load the dataset
+df = pd.read_csv("your_file.csv")
 
-# Prepare dates
-df["Enddate"] = pd.to_datetime(df["Enddate"], errors="coerce")
+# Make sure Year is numeric
+df["Year"] = pd.to_numeric(df["Year"], errors="coerce")
 
-# Remove rows with missing information
-df = df.dropna(subset=["Enddate", "Value", "Currency"])
+# Remove rows without a year
+df = df.dropna(subset=["Year"])
 
-# Sort by date
-df = df.sort_values("Enddate")
-
+# Convert Year to integer
+df["Year"] = df["Year"].astype(int)
 
 # -----------------------------
-# INTERACTION 1: Currency
+# INTERACTION 1: YEAR RANGE
 # -----------------------------
 
-st.subheader("Explore the data")
+min_year = int(df["Year"].min())
+max_year = int(df["Year"].max())
 
-currencies = sorted(df["Currency"].unique())
-
-selected_currency = st.selectbox(
-    "Choose a currency:",
-    currencies
+year_range = st.slider(
+    "Select year range",
+    min_value=min_year,
+    max_value=max_year,
+    value=(min_year, max_year)
 )
 
-# Filter according to currency
-currency_df = df[df["Currency"] == selected_currency].copy()
-
-
-# -----------------------------
-# INTERACTION 2: Date range
-# -----------------------------
-
-min_date = currency_df["Enddate"].min().date()
-max_date = currency_df["Enddate"].max().date()
-
-selected_dates = st.slider(
-    "Choose a date range:",
-    min_value=min_date,
-    max_value=max_date,
-    value=(min_date, max_date)
-)
-
-# Apply the selected date range
-filtered_df = currency_df[
-    (currency_df["Enddate"].dt.date >= selected_dates[0]) &
-    (currency_df["Enddate"].dt.date <= selected_dates[1])
+# Filter the data
+filtered_df = df[
+    (df["Year"] >= year_range[0]) &
+    (df["Year"] <= year_range[1])
 ]
 
+# -----------------------------
+# INTERACTION 2: CURRENCY
+# -----------------------------
+
+currency_options = ["LCU", "SLC"]
+
+selected_currencies = st.multiselect(
+    "Select currency",
+    currency_options,
+    default=currency_options
+)
 
 # -----------------------------
 # VISUALIZATION 1
+# Currency trend over time
 # -----------------------------
 
-st.subheader("Exchange Rate Value Over Time")
+st.subheader("Currency Values Over Time")
 
-fig1 = px.line(
-    filtered_df,
-    x="Enddate",
-    y="Value",
-    title=f"{selected_currency} Exchange Rate Value Over Time",
-    markers=True
+if len(selected_currencies) > 0:
+
+    fig1 = px.line(
+        filtered_df,
+        x="Year",
+        y=selected_currencies,
+        markers=True,
+        title="Lebanese Currency Values Over Time"
+    )
+
+    fig1.update_layout(
+        xaxis_title="Year",
+        yaxis_title="Currency Value",
+        legend_title="Currency"
+    )
+
+    st.plotly_chart(fig1, use_container_width=True)
+
+else:
+    st.warning("Please select at least one currency.")
+
+# -----------------------------
+# INSIGHT 1
+# -----------------------------
+
+st.subheader("Insight 1")
+
+st.write(
+    "The line chart shows how Lebanese currency values changed over time. "
+    "The interactive year range allows the user to focus on a specific "
+    "period and observe changes more clearly."
 )
-
-fig1.update_layout(
-    xaxis_title="End date",
-    yaxis_title="Value"
-)
-
-st.plotly_chart(fig1, use_container_width=True)
-
 
 # -----------------------------
 # VISUALIZATION 2
+# Distribution / Box Plot
 # -----------------------------
 
-st.subheader("Distribution of Exchange Rate Values")
+st.subheader("Distribution of Currency Values")
 
-fig2 = px.histogram(
-    filtered_df,
-    x="Value",
-    title=f"Distribution of {selected_currency} Exchange Rate Values",
-    nbins=30
-)
+if len(selected_currencies) > 0:
 
-fig2.update_layout(
-    xaxis_title="Value",
-    yaxis_title="Number of observations"
-)
-
-st.plotly_chart(fig2, use_container_width=True)
-
-
-# -----------------------------
-# INSIGHTS
-# -----------------------------
-
-st.subheader("Key Insights")
-
-if len(filtered_df) > 0:
-
-    highest_value = filtered_df["Value"].max()
-    lowest_value = filtered_df["Value"].min()
-
-    st.write(
-        f"• The selected period has exchange-rate values ranging "
-        f"from {lowest_value:,.2f} to {highest_value:,.2f}."
+    melted_df = filtered_df[selected_currencies].melt(
+        var_name="Currency",
+        value_name="Value"
     )
 
-    st.write(
-        f"• The distribution shows how frequently different exchange-rate "
-        f"values occur within the selected {selected_currency} period."
+    fig2 = px.box(
+        melted_df,
+        x="Currency",
+        y="Value",
+        points="outliers",
+        title="Distribution of Currency Values"
     )
 
-else:
-    st.warning("No observations are available for the selected period.")
+    fig2.update_layout(
+        xaxis_title="Currency",
+        yaxis_title="Currency Value"
+    )
 
+    st.plotly_chart(fig2, use_container_width=True)
 
+# -----------------------------
+# INSIGHT 2
+# -----------------------------
 
+st.subheader("Insight 2")
 
+st.write(
+    "The box plot highlights the distribution and spread of the currency "
+    "values. Extreme observations appear as outliers and reflect periods "
+    "of substantial changes in currency values."
+)
