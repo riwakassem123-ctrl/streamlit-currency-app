@@ -1,99 +1,222 @@
 import streamlit as st
 import pandas as pd
-import plotly.express as px
 
-# =========================
-# LOAD DATA
-# =========================
+st.title("LBP/USD Exchange Rate Analysis")
 
-df = pd.read_csv("dataset.csv")
+# =============================================================================
+# Load Your CSV
+# =============================================================================
+@st.cache_data
+def load_data():
+    df = pd.read_csv("dataset.csv")  
+    # Rename all your columns
+    df = df.rename(columns={
+        "StartDate": "date",
+        "EndDate": "end_date",
+        "Value": "lbp_usd",
+        "refArea": "region",
+        "Currency": "currency",
+        "Item Code": "item_code",
+        "Observation URI": "obs_uri",
+        "Month": "month_name",      # NEW
+        "Publisher": "publisher",   # NEW
+        "Year": "year",             # NEW
+        "Item": "item",             # NEW
+        "Dataset": "dataset",       # NEW
+    })
 
-st.title("Lebanese Currency Visualization")
+    # Parse dates
+    df["date"] = pd.to_datetime(df["date"])
 
-# =========================
-# FIND COLUMNS
-# =========================
+    # Extract year and month if not already columns
+    if "year" not in df.columns:
+        df["year"] = df["date"].dt.year
+    if "month_name" not in df.columns:
+        df["month_name"] = df["date"].dt.strftime("%B")
 
-st.write("Number of rows:", len(df))
-st.write("Number of columns:", len(df.columns))
+    df["month_num"] = df["date"].dt.month
 
-# Show the actual column names
-st.write("Column names:", list(df.columns))
+    return df
 
-# =========================
-# SELECT COLUMNS
-# =========================
+df = load_data()
 
-st.subheader("Select variables")
+# =============================================================================
+# Sidebar Filters
+# =============================================================================
+with st.sidebar:
+    st.header("Filters")
 
-x_column = st.selectbox(
-    "Select the time/year column",
-    df.columns
-)
-
-y_columns = st.multiselect(
-    "Select currency/value columns",
-    [col for col in df.columns if col != x_column],
-    default=[]
-)
-
-# =========================
-# LINE CHART
-# =========================
-
-if len(y_columns) > 0:
-
-    st.subheader("Currency Values Over Time")
-
-    chart_df = df[[x_column] + y_columns].copy()
-
-    fig1 = px.line(
-        chart_df,
-        x=x_column,
-        y=y_columns,
-        markers=True
+    # 1. Date Range
+    st.subheader("Date Range")
+    min_date = df["date"].min().date()
+    max_date = df["date"].max().date()
+    date_range = st.date_input(
+        "Select date range",
+        value=(min_date, max_date),
+        min_value=min_date,
+        max_value=max_date,
     )
 
-    fig1.update_layout(
-        xaxis_title=x_column,
-        yaxis_title="Value"
+    # 2. Year Multiselect
+    st.subheader("Year")
+    all_years = sorted(df["year"].unique().tolist())
+    selected_years = st.multiselect(
+        "Select years",
+        options=all_years,
+        default=all_years,
     )
 
-    st.plotly_chart(
-        fig1,
-        use_container_width=True
+    # 3. Month Multiselect
+    st.subheader("Month")
+    all_months = df["month_name"].unique().tolist()
+    selected_months = st.multiselect(
+        "Select months",
+        options=all_months,
+        default=all_months,
     )
 
-    # =========================
-    # BOX PLOT
-    # =========================
-
-    st.subheader("Distribution of Values")
-
-    box_df = chart_df[y_columns].melt(
-        var_name="Variable",
-        value_name="Value"
+    # 4. Publisher Dropdown
+    st.subheader("Publisher")
+    all_publishers = df["publisher"].unique().tolist()
+    selected_publisher = st.selectbox(
+        "Select publisher",
+        options=["All"] + all_publishers,
     )
 
-    fig2 = px.box(
-        box_df,
-        x="Variable",
-        y="Value",
-        points="outliers"
+    # 5. Item Multiselect
+    st.subheader("Item")
+    all_items = df["item"].unique().tolist()
+    selected_items = st.multiselect(
+        "Select items",
+        options=all_items,
+        default=all_items,
     )
 
-    fig2.update_layout(
-        xaxis_title="Variable",
-        yaxis_title="Value"
+    # 6. Dataset Dropdown
+    st.subheader("Dataset")
+    all_datasets = df["dataset"].unique().tolist()
+    selected_dataset = st.selectbox(
+        "Select dataset",
+        options=["All"] + all_datasets,
     )
 
-    st.plotly_chart(
-        fig2,
-        use_container_width=True
+    # 7. Region Multiselect
+    st.subheader("Region")
+    all_regions = df["region"].unique().tolist()
+    selected_regions = st.multiselect(
+        "Select regions",
+        options=all_regions,
+        default=all_regions,
     )
 
-else:
-
-    st.info(
-        "Select at least one value/currency column above to display the charts."
+    # 8. Currency Dropdown
+    st.subheader("Currency")
+    all_currencies = df["currency"].unique().tolist()
+    selected_currency = st.selectbox(
+        "Select currency",
+        options=["All"] + all_currencies,
     )
+
+    # 9. Rate Range Slider
+    st.subheader("Rate Range")
+    min_rate = float(df["lbp_usd"].min())
+    max_rate = float(df["lbp_usd"].max())
+    rate_range = st.slider(
+        "LBP/USD rate range",
+        min_value=min_rate,
+        max_value=max_rate,
+        value=(min_rate, max_rate),
+        step=100.0,
+    )
+
+    # 10. Checkboxes
+    st.subheader("Display Options")
+    show_line_chart = st.checkbox("Show line chart", value=True)
+    show_scatter_chart = st.checkbox("Show scatter chart", value=True)
+    show_raw_data = st.checkbox("Show raw data table", value=False)
+
+# =============================================================================
+# Apply Filters
+# =============================================================================
+filtered_df = df.copy()
+
+# Date range
+if len(date_range) == 2:
+    filtered_df = filtered_df[
+        (filtered_df["date"].dt.date >= date_range[0]) &
+        (filtered_df["date"].dt.date <= date_range[1])
+    ]
+
+# Year
+if selected_years:
+    filtered_df = filtered_df[filtered_df["year"].isin(selected_years)]
+
+# Month
+if selected_months:
+    filtered_df = filtered_df[filtered_df["month_name"].isin(selected_months)]
+
+# Publisher
+if selected_publisher != "All":
+    filtered_df = filtered_df[filtered_df["publisher"] == selected_publisher]
+
+# Item
+if selected_items:
+    filtered_df = filtered_df[filtered_df["item"].isin(selected_items)]
+
+# Dataset
+if selected_dataset != "All":
+    filtered_df = filtered_df[filtered_df["dataset"] == selected_dataset]
+
+# Region
+if selected_regions:
+    filtered_df = filtered_df[filtered_df["region"].isin(selected_regions)]
+
+# Currency
+if selected_currency != "All":
+    filtered_df = filtered_df[filtered_df["currency"] == selected_currency]
+
+# Rate slider
+filtered_df = filtered_df[
+    (filtered_df["lbp_usd"] >= rate_range[0]) &
+    (filtered_df["lbp_usd"] <= rate_range[1])
+]
+
+# =============================================================================
+# Charts
+# =============================================================================
+
+# Line Chart
+if show_line_chart:
+    st.subheader("LBP/USD Exchange Rate Over Time")
+    st.line_chart(
+        filtered_df,
+        x="date",
+        y="lbp_usd",
+        x_label="Date",
+        y_label="LBP per 1 USD",
+    )
+
+# Scatter Chart
+if show_scatter_chart:
+    st.subheader("Monthly Exchange Rate Fluctuations by Year")
+    monthly_df = (
+        filtered_df.groupby(["year", "month_num"])["lbp_usd"]
+        .mean()
+        .reset_index()
+    )
+    monthly_df["year"] = monthly_df["year"].astype(str)
+
+    st.scatter_chart(
+        monthly_df,
+        x="month_num",
+        y="lbp_usd",
+        color="year",
+        x_label="Month",
+        y_label="Avg LBP per 1 USD",
+    )
+
+# Raw Data Table
+if show_raw_data:
+    st.subheader("Raw Data")
+    st.dataframe(filtered_df, hide_index=True)
+
