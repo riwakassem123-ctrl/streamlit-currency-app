@@ -11,7 +11,7 @@ st.write(
 )
 
 # Load the dataset
-df = pd.read_csv("your_file.csv")
+df = pd.read_csv("dataset.csv")
 
 # Make sure Year is numeric
 df["Year"] = pd.to_numeric(df["Year"], errors="coerce")
