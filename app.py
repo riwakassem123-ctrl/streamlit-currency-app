@@ -10,53 +10,130 @@ st.set_page_config(
 st.title("Lebanon Exchange Rate Analysis")
 
 st.write(
-    "This interactive app explores changes in Lebanon's "
-    "exchange-rate data over time."
+    """
+    This interactive app examines changes in Lebanon's exchange-rate data
+    over time. The dataset contains exchange-rate observations identified
+    by currency, dates, and recorded values.
+    """
 )
 
-# Load the dataset
+# Load dataset
 df = pd.read_csv("dataset.csv")
 
-# Show the data
-st.subheader("Dataset")
-st.dataframe(df)
+# Prepare dates
+df["End date"] = pd.to_datetime(df["End date"], errors="coerce")
 
-# Find numeric columns
-numeric_columns = df.select_dtypes(include="number").columns.tolist()
+# Remove rows with missing information
+df = df.dropna(subset=["End date", "Value", "Currency"])
 
-if numeric_columns:
+# Sort by date
+df = df.sort_values("End date")
 
-    selected_column = st.selectbox(
-        "Choose an exchange-rate variable:",
-        numeric_columns
+
+# -----------------------------
+# INTERACTION 1: Currency
+# -----------------------------
+
+st.subheader("Explore the data")
+
+currencies = sorted(df["Currency"].unique())
+
+selected_currency = st.selectbox(
+    "Choose a currency:",
+    currencies
+)
+
+# Filter according to currency
+currency_df = df[df["Currency"] == selected_currency].copy()
+
+
+# -----------------------------
+# INTERACTION 2: Date range
+# -----------------------------
+
+min_date = currency_df["End date"].min().date()
+max_date = currency_df["End date"].max().date()
+
+selected_dates = st.slider(
+    "Choose a date range:",
+    min_value=min_date,
+    max_value=max_date,
+    value=(min_date, max_date)
+)
+
+# Apply the selected date range
+filtered_df = currency_df[
+    (currency_df["End date"].dt.date >= selected_dates[0]) &
+    (currency_df["End date"].dt.date <= selected_dates[1])
+]
+
+
+# -----------------------------
+# VISUALIZATION 1
+# -----------------------------
+
+st.subheader("Exchange Rate Value Over Time")
+
+fig1 = px.line(
+    filtered_df,
+    x="End date",
+    y="Value",
+    title=f"{selected_currency} Exchange Rate Value Over Time",
+    markers=True
+)
+
+fig1.update_layout(
+    xaxis_title="End date",
+    yaxis_title="Value"
+)
+
+st.plotly_chart(fig1, use_container_width=True)
+
+
+# -----------------------------
+# VISUALIZATION 2
+# -----------------------------
+
+st.subheader("Distribution of Exchange Rate Values")
+
+fig2 = px.histogram(
+    filtered_df,
+    x="Value",
+    title=f"Distribution of {selected_currency} Exchange Rate Values",
+    nbins=30
+)
+
+fig2.update_layout(
+    xaxis_title="Value",
+    yaxis_title="Number of observations"
+)
+
+st.plotly_chart(fig2, use_container_width=True)
+
+
+# -----------------------------
+# INSIGHTS
+# -----------------------------
+
+st.subheader("Key Insights")
+
+if len(filtered_df) > 0:
+
+    highest_value = filtered_df["Value"].max()
+    lowest_value = filtered_df["Value"].min()
+
+    st.write(
+        f"• The selected period has exchange-rate values ranging "
+        f"from {lowest_value:,.2f} to {highest_value:,.2f}."
     )
 
-    # Visualization 1
-    st.subheader("Exchange Rate Trend")
-
-    fig1 = px.line(
-        df,
-        x="EndDate",
-        y="Value",
-        title="Exchange rate value over time",
-        
+    st.write(
+        f"• The distribution shows how frequently different exchange-rate "
+        f"values occur within the selected {selected_currency} period."
     )
-
-    st.plotly_chart(fig1, use_container_width=True)
-
-    # Visualization 2
-    st.subheader("Exchange Rate Distribution")
-
-    fig2 = px.histogram(
-        df,
-        x=selected_column,
-        title=f"Distribution of {selected_column}"
-    )
-
-    st.plotly_chart(fig2, use_container_width=True)
 
 else:
-    st.error("No numeric columns were found in the dataset.")
+    st.warning("No observations are available for the selected period.")
 
 
 
