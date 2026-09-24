@@ -12,5 +12,5 @@ download filtered  data
 the dataset contains 746 rows and 12 columns 
 # app link 
 https://app-currency-app-eu4dvq5eqdhbajru7flc3d.streamlit.app/
-#github repository link 
+# github repository link
 https://github.com/riwakassem123-ctrl/streamlit-currency-app
